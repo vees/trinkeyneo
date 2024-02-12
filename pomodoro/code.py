@@ -20,6 +20,7 @@ ROYGBV_COLORS = [
 ]
 PAUSE_COLOR = (255, 255, 0)  # Yellow for pause
 BREAK_COLOR = (0, 0, 255)    # Blue for break
+RESET_COLOR = (255, 0, 0)    # Red for reset prompt
 
 # Initialize NeoPixels with default brightness of 0.1
 num_pixels = 4
@@ -32,6 +33,7 @@ touch2 = touchio.TouchIn(board.TOUCH2)
 # Timer states
 timer_running = False
 timer_paused = False
+timer_reset = False
 timer_start = 0
 pause_start = 0
 paused_time_total = 0  # Accumulator for total paused time
@@ -72,14 +74,17 @@ def pulse_break_time(elapsed_break_time):
     pixels.brightness = brightness  # Set brightness based on sine wave
     pixels.show()
 
-def update_pause_leds():
+def update_pause_leds(timer_reset=False):
     """Update LEDs to the pause color"""
-    pixels.fill(PAUSE_COLOR)
+    if timer_reset:
+        pixels.fill(RESET_COLOR)
+    else:
+        pixels.fill(PAUSE_COLOR)
     pixels.show()
 
 def update_pixels(elapsed_time, in_break):
     if timer_paused:
-        update_pause_leds()  # Ensure LEDs are updated to pause color
+        update_pause_leds(timer_reset)  # Ensure LEDs are updated to pause color
         return
 
     segment = int(elapsed_time // FOCUS_SEGMENT_DURATION)
@@ -108,31 +113,36 @@ while True:
     if touch1.value:  # Start/restart or resume the timer, or end break early
         while touch1.value:  # Debounce
             time.sleep(0.1)
-        if not (timer_running or timer_paused) or in_break:
+        if not timer_running or in_break:
             # Reset for a new session
             timer_running = True
             timer_paused = False
+            timer_reset = False
             timer_start = time.monotonic()
             paused_time_total = 0
-        elif timer_paused:
+        elif timer_running and timer_paused:
             # Resume from pause
             timer_running = True
             timer_paused = False
+            timer_reset = False
             paused_time_total += time.monotonic() - pause_start
-            update_pause_leds()
 
     if touch2.value and timer_running:  # Pause the timer
         while touch2.value:  # Debounce
             time.sleep(0.1)
         if not timer_paused:
+            # Pause timer
             timer_paused = True
-            timer_running = False
             pause_start = time.monotonic()
             update_pause_leds()
-        else:
-            timer_paused = False
-            timer_running = True
-            paused_time_total += time.monotonic() - pause_start
+        elif timer_paused and not timer_reset:
+            # Go to pre-reset state
+            timer_reset = True
+            update_pause_leds(timer_reset)
+        elif timer_paused and timer_reset:
+            # Perform reset with timer_running = False
+            # Any Button 1 action will create new
+            timer_running = False
 
     if timer_running and not timer_paused:
         current_time = time.monotonic()
@@ -141,7 +151,9 @@ while True:
         update_pixels(elapsed_time - POMODORO_DURATION if in_break else elapsed_time, in_break)
         if in_break and elapsed_time - POMODORO_DURATION > BREAK_DURATION:
             timer_running = False  # End timer after the break
-            pixels.fill((0, 0, 0))  # Turn off LEDs
-            pixels.show()
+
+    if not timer_running:
+        pixels.fill((0, 0, 0))  # Turn off LEDs
+        pixels.show()
 
     time.sleep(0.1)  # Small delay to reduce CPU usage

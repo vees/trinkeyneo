@@ -18,7 +18,10 @@ Pomodoro Timer for Trinkey Neo
 
 ### Resetting a Pomodoro in the middle
 
-- I'm working on this feature right now, it will probably be an additional tap of Button 2 while in the Pause state
+- Press Button 2 while in the Pause state where all four LED are bright yellow
+- All four LED will turn bright red
+- Press Button 2 a second time to reset the timer completely
+- Press Button 1 to resume the current Pomodoro in process
 
 ### To install on Trinkey Neo:
 
