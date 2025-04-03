@@ -33,8 +33,8 @@ ROYGBV_COLORS = [
 
 num_pixels = 4
 pixels = neopixel.NeoPixel(board.NEOPIXEL, num_pixels, brightness=0.02, auto_write=True)
-pixels[1] = ROYGBV_COLORS[0]
-pixels[2] = ROYGBV_COLORS[4]
+pixels[1] = ROYGBV_COLORS[4]
+pixels[2] = ROYGBV_COLORS[0]
 
 while True:
     pad1_touched = touch_pad1.value
@@ -42,7 +42,10 @@ while True:
 
     # If Pad 1 is just touched, send Play/Pause
     if pad1_touched and not pad1_touched_prev:
-        cc.send(ConsumerControlCode.PLAY_PAUSE)
+        # cc.send(ConsumerControlCode.PLAY_PAUSE)
+        cc.press(ConsumerControlCode.FAST_FORWARD)
+        time.sleep(1.0)
+        cc.release()
 
     # If Pad 2 is just touched, send Next Track
     if pad2_touched and not pad2_touched_prev:
